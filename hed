@@ -10,20 +10,14 @@ def getCharRepr(c: str, pos: bool):
   COLOR = BYELLOW if (pos) else ""
   if (ord(c) == 0):
     return f"{COLOR}{RED}~{RESET}"
-  elif (ord(c) == 4):
-    return f"{COLOR}{RED}E{RESET}"
-  elif (ord(c) == 5):
-    return f"{COLOR}{RED}Q{RESET}"
-  elif (ord(c) == 8):
-    return f"{COLOR}{RED}B{RESET}"
-  elif (ord(c) == 9):
-    return f"{COLOR}{RED}T{RESET}"
   elif (ord(c) == 10):
     return f"{COLOR}{RED}↓{RESET}"
+  elif (ord(c) < 31):
+    return f"{COLOR}{RED}{chr(ord(c)+64)}{RESET}"
   elif ((ord(c) >= 32) and (ord(c) < 127)):
     return f"{COLOR}{WHITE}{c}{RESET}"
-  elif (ord(c) == 127):
-    return f"{COLOR}{RED}D{RESET}"
+  elif (ord(c) in range(127, 156)):
+    return f"{COLOR}{RED}{chr(ord(c)-126+96)}{RESET}"
   else:
     return f"{COLOR}{RED}.{RESET}"
 
@@ -99,6 +93,8 @@ def main(argc: int, argv: list):
         pos += 1
     elif (com[:2] == "P "):
       pos = int(com[2:])
+    elif (com[:2] == "Px"):
+      pos = int(com[2:], base=16)
     elif (com[:2] == "PF"):
       pos += int(com[2:])
     elif (com[:2] == "PB"):
