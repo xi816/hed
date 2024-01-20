@@ -92,9 +92,13 @@ def main(argc: int, argv: list):
         buf[pos] = chr(int(val[1], base=16))
         pos += 1
     elif (com[:2] == "P "):
-      pos = int(com[2:])
-    elif (com[:2] == "Px"):
       pos = int(com[2:], base=16)
+    elif (com[:3] == "PP "):
+      val = com[3:].split()
+      if (len(val) != 2):
+        print(f"`PP` expected 2 arguments")
+        continue
+      printBuf(buf[int(val[0], base=16):int(val[1], base=16)], sep, pos)
     elif (com[:2] == "PF"):
       pos += int(com[2:])
     elif (com[:2] == "PB"):
