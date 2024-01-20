@@ -40,8 +40,8 @@ def main(argc: int, argv: list):
   if (not os.path.exists(argv[1])):
     with open(argv[1], "w"):
       pass
-  with open(argv[1], "rb") as fl:
-    buf: str = [chr(i) for i in fl.read()]
+  with open(argv[1], "r") as fl:
+    buf: str = [i for i in fl.read()]
   pos: int = 0
   sep: int = 16
 
