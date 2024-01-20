@@ -10,6 +10,8 @@ def getCharRepr(c: str, pos: bool):
   COLOR2 = YELLOW if (pos) else WHITE
   if (ord(c) == 0):
     return f"{COLOR}~{RESET}"
+  elif (ord(c) == 4):
+    return f"{RED}E{RESET}"
   elif (ord(c) == 5):
     return f"{COLOR}Q{RESET}"
   elif (ord(c) == 8):
@@ -30,13 +32,15 @@ def printBuf(buf: list, sep: int, cpos: int):
     print(f"{RED}No data.{RESET}")
   else:
     print(f"\n{' '*12} {GREEN}0123456789ABCDEF{RESET}", end="")
-    for pos, c in enumerate(buf):
+    for pos, c in enumerate(buf+["\4"]):
       if ((pos % sep == 0)):
         print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
       print(getCharRepr(c, (cpos == pos)), end="")
     print("\n")
 
 def main(argc: int, argv: list):
+  if (not argv[1:]):
+    argv.append("unnamed.out")
   if (not os.path.exists(argv[1])):
     with open(argv[1], "w"):
       pass
@@ -58,6 +62,10 @@ def main(argc: int, argv: list):
     elif (com[0] == "w"):
       for i in com[1:].split():
         buf[pos] = chr(int(i, base=16))
+        pos += 1
+    elif (com[0] == "W"):
+      for i in com[1:].split():
+        buf.insert(pos, chr(int(i, base=16)))
         pos += 1
     elif (com[:2] == "S "):
       val = int(com[2:])
