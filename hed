@@ -83,6 +83,10 @@ def main(argc: int, argv: list):
         pos += 1
     elif (com[:2] == "P "):
       pos = int(com[2:])
+    elif (com[:2] == "PF"):
+      pos += int(com[2:])
+    elif (com[:2] == "PB"):
+      pos -= int(com[2:])
     elif (com == "p"):
       printBuf(buf, sep, pos)
     else:
