@@ -1,38 +1,38 @@
 #!/usr/bin/python3
 import os
 import sys
-from colorama import Fore
+from colorama import Fore, Back
 RED, YELLOW, GREEN, CYAN, WHITE, RESET =\
-  Fore.RED, Fore.YELLOW, Fore.GREEN, Fore.CYAN, Fore.WHITE, Fore.RESET
+  Fore.RED, Fore.YELLOW, Fore.GREEN, Fore.CYAN, Fore.WHITE, Fore.RESET+Back.RESET
+BYELLOW = Back.YELLOW
 
 def getCharRepr(c: str, pos: bool):
-  COLOR = YELLOW if (pos) else RED
-  COLOR2 = YELLOW if (pos) else WHITE
+  COLOR = BYELLOW if (pos) else ""
   if (ord(c) == 0):
-    return f"{COLOR}~{RESET}"
+    return f"{COLOR}{RED}~{RESET}"
   elif (ord(c) == 4):
-    return f"{RED}E{RESET}"
+    return f"{COLOR}{RED}E{RESET}"
   elif (ord(c) == 5):
-    return f"{COLOR}Q{RESET}"
+    return f"{COLOR}{RED}Q{RESET}"
   elif (ord(c) == 8):
-    return f"{COLOR}B{RESET}"
+    return f"{COLOR}{RED}B{RESET}"
   elif (ord(c) == 9):
-    return f"{COLOR}T{RESET}"
+    return f"{COLOR}{RED}T{RESET}"
   elif (ord(c) == 10):
-    return f"{COLOR}↓{RESET}"
+    return f"{COLOR}{RED}↓{RESET}"
   elif ((ord(c) >= 32) and (ord(c) < 127)):
-    return f"{COLOR2}{c}{RESET}"
+    return f"{COLOR}{WHITE}{c}{RESET}"
   elif (ord(c) == 127):
-    return f"{COLOR}D{RESET}"
+    return f"{COLOR}{RED}D{RESET}"
   else:
-    return f"{COLOR}.{RESET}"
+    return f"{COLOR}{RED}.{RESET}"
 
 def printBuf(buf: list, sep: int, cpos: int):
   if (not buf):
     print(f"{RED}No data.{RESET}")
   else:
     print(f"\n{' '*12} {GREEN}0123456789ABCDEF{RESET}", end="")
-    for pos, c in enumerate(buf+["\4"]):
+    for pos, c in enumerate(buf):
       if ((pos % sep == 0)):
         print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
       print(getCharRepr(c, (cpos == pos)), end="")
@@ -75,8 +75,16 @@ def main(argc: int, argv: list):
       elif (len(buf) > val):
         while (len(buf) > val):
           buf = buf[:-1]
+    elif (com[:2] == "S+"):
+      buf += "\0"*int(com[2:])
+    elif (com[:2] == "S-"):
+      buf = buf[:-int(com[2:])]
     elif (com[:2] == "E "):
       sep = int(com[2:])
+    elif (com[:3] == "Hc "):
+      for i in com[3:]:
+        print(f"{GREEN}{hex(ord(i))[2:].upper():0<2}{RESET}", end=" ")
+      print("\b")
     elif (com[:2] == "B "):
       for i in range(int(com[2:])):
         pos -= 1
