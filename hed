@@ -1,6 +1,7 @@
-#!/usr/bin/python3
+#!/home/bulka/myvenv/bin/python3
 import os
 import sys
+from govnocodeuc import *;
 from colorama import Fore, Back
 RED, YELLOW, GREEN, CYAN, WHITE, RESET =\
   Fore.RED, Fore.YELLOW, Fore.GREEN, Fore.CYAN, Fore.WHITE, Fore.RESET+Back.RESET
@@ -32,11 +33,33 @@ def printBuf(buf: list, sep: int, cpos: int):
       print(getCharRepr(c, (cpos == pos)), end="")
     print("\n")
 
+def printBuf00(buf: list, sep: int, cpos: int):
+  if (not buf):
+    print(f"{RED}No data.{RESET}")
+  else:
+    print(f"\n{' '*12} {GREEN}0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F{RESET}", end="")
+    for pos, c in enumerate(buf):
+      if ((pos % sep == 0)):
+        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
+      print(f"{hex(ord(c))[2:]:0>2}", end=" ")
+    print("\n")
+
+def printBuf01(buf: list, sep: int, cpos: int):
+  if (not buf):
+    print(f"{RED}No data.{RESET}")
+  else:
+    print(f"\n{' '*12} {GREEN}0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F{RESET}", end="")
+    for pos, c in enumerate(buf):
+      if ((pos % sep == 0)):
+        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
+      print(f"{govnocodeToUnicode00(ord(c)): <3}", end=" ")
+    print("\n")
+
 def main(argc: int, argv: list):
   if (not argv[1:]):
     argv.append("unnamed.out")
   if (not os.path.exists(argv[1])):
-    with open(argv[1], "w"):
+    with open(argv[1], "wb"):
       pass
   with open(argv[1], "rb") as fl:
     buf: str = [chr(i) for i in fl.read()]
@@ -105,6 +128,10 @@ def main(argc: int, argv: list):
       pos -= int(com[2:])
     elif (com == "p"):
       printBuf(buf, sep, pos)
+    elif (com == "px"):
+      printBuf00(buf, sep, pos)
+    elif (com == "pG"):
+      printBuf01(buf, sep, pos)
     else:
       print(f"Unknown command `{com}`")
   return 0;
