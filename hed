@@ -1,24 +1,25 @@
 #!/home/bulka/myvenv/bin/python3
 import os
 import sys
-from govnocodeuc import *;
-from colorama import Fore, Back
 RED, YELLOW, GREEN, CYAN, WHITE, RESET =\
-  Fore.RED, Fore.YELLOW, Fore.GREEN, Fore.CYAN, Fore.WHITE, Fore.RESET+Back.RESET
-BYELLOW = Back.YELLOW
+  "\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[37m", "\033[0m"
+BYELLOW, BCYAN =\
+  "\033[43m", "\033[46m"
+BLACK =\
+  "\033[30m"
 
 def getCharRepr(c: str, pos: bool):
   COLOR = BYELLOW if (pos) else ""
-  if (ord(c) == 0):
+  if (c == 0):
     return f"{COLOR}{RED}~{RESET}"
-  elif (ord(c) == 10):
-    return f"{COLOR}{RED}↓{RESET}"
-  elif (ord(c) < 31):
-    return f"{COLOR}{RED}{chr(ord(c)+64)}{RESET}"
-  elif ((ord(c) >= 32) and (ord(c) < 127)):
-    return f"{COLOR}{WHITE}{c}{RESET}"
-  elif (ord(c) in range(127, 156)):
-    return f"{COLOR}{RED}{chr(ord(c)-126+96)}{RESET}"
+  elif (c == 10):
+    return f"{COLOR}{CYAN}N{RESET}"
+  elif (c < 31):
+    return f"{COLOR}{RED}{chr(c+64)}{RESET}"
+  elif ((c >= 32) and (c < 127)):
+    return f"{COLOR}{WHITE}{chr(c)}{RESET}"
+  elif (c in range(127, 156)):
+    return f"{COLOR}{RED}{chr(c-30)}{RESET}"
   else:
     return f"{COLOR}{RED}.{RESET}"
 
@@ -26,10 +27,10 @@ def printBuf(buf: list, sep: int, cpos: int):
   if (not buf):
     print(f"{RED}No data.{RESET}")
   else:
-    print(f"\n{' '*12} {GREEN}0123456789ABCDEF{RESET}", end="")
+    print(f"\n{' '*8} {GREEN}0123456789ABCDEF{RESET}", end="")
     for pos, c in enumerate(buf):
       if ((pos % sep == 0)):
-        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
+        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>4}]{RESET} ", end="")
       print(getCharRepr(c, (cpos == pos)), end="")
     print("\n")
 
@@ -37,22 +38,14 @@ def printBuf00(buf: list, sep: int, cpos: int):
   if (not buf):
     print(f"{RED}No data.{RESET}")
   else:
-    print(f"\n{' '*12} {GREEN}0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F{RESET}", end="")
+    print(f"\n{' '*8} {GREEN}0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F{RESET}", end="")
     for pos, c in enumerate(buf):
       if ((pos % sep == 0)):
-        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
-      print(f"{hex(ord(c))[2:]:0>2}", end=" ")
-    print("\n")
-
-def printBuf01(buf: list, sep: int, cpos: int):
-  if (not buf):
-    print(f"{RED}No data.{RESET}")
-  else:
-    print(f"\n{' '*12} {GREEN}0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F{RESET}", end="")
-    for pos, c in enumerate(buf):
-      if ((pos % sep == 0)):
-        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>8}]{RESET} ", end="")
-      print(f"{govnocodeToUnicode00(ord(c)): <3}", end=" ")
+        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>4}]{RESET} ", end="")
+      if (cpos == pos):
+        print(f"{BCYAN}{BLACK}{hex(c)[2:].upper():0>2}{RESET}", end=" ")
+      else:
+        print(f"{hex(c)[2:].upper():0>2}", end=" ")
     print("\n")
 
 def main(argc: int, argv: list):
@@ -62,38 +55,40 @@ def main(argc: int, argv: list):
     with open(argv[1], "wb"):
       pass
   with open(argv[1], "rb") as fl:
-    buf: str = [chr(i) for i in fl.read()]
+    buf = bytearray(fl.read());
   pos: int = 0
   sep: int = 16
 
   while (True):
-    com = input(f"{YELLOW}[0x{hex(pos)[2:].upper():0>8}]{RESET} -> ")
+    com = input(f"{YELLOW}[0x{hex(pos)[2:].upper():0>4}]{RESET} -> {GREEN}")
     if (com == ""):
       pass
     elif (com == "q"):
       break
     elif (com == "s"):
-      with open(argv[1], "w") as fl:
-        fl.write("".join(buf))
+      with open(argv[1], "wb") as fl:
+        fl.write(buf)
       print(f"File saved into {argv[1]}")
+    elif (com == "Ca"):
+      print("\033[H\033[2J", end="");
     elif (com[0] == "w"):
       for i in com[1:].split():
-        buf[pos] = chr(int(i, base=16))
+        buf[pos] = int(i, base=16)
         pos += 1
     elif (com[0] == "W"):
       for i in com[1:].split():
-        buf.insert(pos, chr(int(i, base=16)))
+        buf.insert(pos, int(i, base=16))
         pos += 1
     elif (com[:2] == "S "):
       val = int(com[2:])
       if (len(buf) < val):
         while (len(buf) < val):
-          buf += "\0"
+          buf += "\0".encode();
       elif (len(buf) > val):
         while (len(buf) > val):
           buf = buf[:-1]
     elif (com[:2] == "S+"):
-      buf += "\0"*int(com[2:])
+      buf += "\0".encode()*int(com[2:])
     elif (com[:2] == "S-"):
       buf = buf[:-int(com[2:])]
     elif (com[:2] == "E "):
@@ -112,7 +107,7 @@ def main(argc: int, argv: list):
         print(f"`r` expected 2 arguments")
         continue
       for i in range(int(val[0])):
-        buf[pos] = chr(int(val[1], base=16))
+        buf[pos] = int(val[1], base=16)
         pos += 1
     elif (com[:2] == "P "):
       pos = int(com[2:], base=16)
@@ -130,8 +125,6 @@ def main(argc: int, argv: list):
       printBuf(buf, sep, pos)
     elif (com == "px"):
       printBuf00(buf, sep, pos)
-    elif (com == "pG"):
-      printBuf01(buf, sep, pos)
     else:
       print(f"Unknown command `{com}`")
   return 0;
