@@ -1,0 +1,136 @@
+#!/usr/bin/python3
+import os
+import sys
+import curses
+
+RED, YELLOW, GREEN, CYAN, WHITE, RESET =\
+  "\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[37m", "\033[0m"
+BYELLOW, BCYAN =\
+  "\033[43m", "\033[46m"
+BLACK =\
+  "\033[30m"
+
+def getCharRepr(c: str, pos: bool):
+  COLOR = BYELLOW if (pos) else ""
+  if (c == 0):
+    return f"{COLOR}{RED}~{RESET}"
+  elif (c == 10):
+    return f"{COLOR}{CYAN}N{RESET}"
+  elif (c < 31):
+    return f"{COLOR}{RED}{chr(c+64)}{RESET}"
+  elif ((c >= 32) and (c < 127)):
+    return f"{COLOR}{WHITE}{chr(c)}{RESET}"
+  elif (c in range(127, 156)):
+    return f"{COLOR}{RED}{chr(c-30)}{RESET}"
+  else:
+    return f"{COLOR}{RED}.{RESET}"
+
+def printBuf(buf: list, sep: int, cpos: int):
+  if (not buf):
+    print(f"{RED}No data.{RESET}")
+  else:
+    print(f"\n{' '*8} {GREEN}0123456789ABCDEF{RESET}", end="")
+    for pos, c in enumerate(buf):
+      if ((pos % sep == 0)):
+        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>4}]{RESET} ", end="")
+      print(getCharRepr(c, (cpos == pos)), end="")
+    print("\n")
+
+def printBuf00(buf: list, sep: int, cpos: int):
+  if (not buf):
+    print(f"{RED}No data.{RESET}")
+  else:
+    print(f"\n{' '*8} {GREEN}0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F{RESET}", end="")
+    for pos, c in enumerate(buf):
+      if ((pos % sep == 0)):
+        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>4}]{RESET} ", end="")
+      if (cpos == pos):
+        print(f"{BCYAN}{BLACK}{hex(c)[2:].upper():0>2}{RESET}", end=" ")
+      else:
+        print(f"{hex(c)[2:].upper():0>2}", end=" ")
+    print("\n")
+
+def main(argc: int, argv: list):
+  if (not argv[1:]):
+    argv.append("unnamed.out")
+  if (not os.path.exists(argv[1])):
+    with open(argv[1], "wb"):
+      pass
+  with open(argv[1], "rb") as fl:
+    buf = bytearray(fl.read());
+  pos: int = 0
+  sep: int = 16
+
+  while (True):
+    com = input(f"{YELLOW}[0x{hex(pos)[2:].upper():0>4}]{RESET} -> {GREEN}")
+    if (com == ""):
+      pass
+    elif (com == "q"):
+      break
+    elif (com == "s"):
+      with open(argv[1], "wb") as fl:
+        fl.write(buf)
+      print(f"File saved into {argv[1]}")
+    elif (com == "Ca"):
+      print("\033[H\033[2J", end="");
+    elif (com[0] == "w"):
+      for i in com[1:].split():
+        buf[pos] = int(i, base=16)
+        pos += 1
+    elif (com[0] == "W"):
+      for i in com[1:].split():
+        buf.insert(pos, int(i, base=16))
+        pos += 1
+    elif (com[:2] == "S "):
+      val = int(com[2:])
+      if (len(buf) < val):
+        while (len(buf) < val):
+          buf += "\0".encode();
+      elif (len(buf) > val):
+        while (len(buf) > val):
+          buf = buf[:-1]
+    elif (com[:2] == "S+"):
+      buf += "\0".encode()*int(com[2:])
+    elif (com[:2] == "S-"):
+      buf = buf[:-int(com[2:])]
+    elif (com[:2] == "E "):
+      sep = int(com[2:])
+    elif (com[:3] == "Hc "):
+      for i in com[3:]:
+        print(f"{GREEN}{hex(ord(i))[2:].upper():0<2}{RESET}", end=" ")
+      print("\b")
+    elif (com[:2] == "B "):
+      for i in range(int(com[2:])):
+        pos -= 1
+        buf[pos] = "\0"
+    elif (com[:2] == "r "):
+      val = com[2:].split()
+      if (len(val) != 2):
+        print(f"`r` expected 2 arguments")
+        continue
+      for i in range(int(val[0])):
+        buf[pos] = int(val[1], base=16)
+        pos += 1
+    elif (com[:2] == "P "):
+      pos = int(com[2:], base=16)
+    elif (com[:3] == "PP "):
+      val = com[3:].split()
+      if (len(val) != 2):
+        print(f"`PP` expected 2 arguments")
+        continue
+      printBuf(buf[int(val[0], base=16):int(val[1], base=16)], sep, pos)
+    elif (com[:2] == "PF"):
+      pos += int(com[2:])
+    elif (com[:2] == "PB"):
+      pos -= int(com[2:])
+    elif (com == "p"):
+      printBuf(buf, sep, pos)
+    elif (com == "px"):
+      printBuf00(buf, sep, pos)
+    else:
+      print(f"Unknown command `{com}`")
+  return 0;
+
+if (__name__ == "__main__"):
+  exit(main(len(sys.argv), sys.argv))
+
