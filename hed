@@ -30,7 +30,7 @@ def printBuf(buf: list, sep: int, cpos: int):
     print(f"\n{' '*8} {GREEN}0123456789ABCDEF{RESET}", end="")
     for pos, c in enumerate(buf):
       if ((pos % sep == 0)):
-        print(f"\n{CYAN}[0x{hex(pos)[2:].upper():0>4}]{RESET} ", end="")
+        print(f"\n{CYAN}[0x{hex(cpos+pos)[2:].upper():0>4}]{RESET} ", end="")
       print(getCharRepr(c, (cpos == pos)), end="")
     print("\n")
 
@@ -71,9 +71,17 @@ def main(argc: int, argv: list):
       print(f"File saved into {argv[1]}")
     elif (com == "Ca"):
       print("\033[H\033[2J", end="");
-    elif (com[0] == "w"):
-      for i in com[1:].split():
+    elif (com.split()[0] == "w"):
+      for i in com.split()[1:]:
         buf[pos] = int(i, base=16)
+        pos += 1
+    elif (com.split()[0] == "wd"):
+      for i in com.split()[1:]:
+        buf[pos] = int(i, base=10)
+        pos += 1
+    elif (com[:2] == "wb"):
+      for i in com.split()[1:]:
+        buf[pos] = int(i, base=2)
         pos += 1
     elif (com[0] == "W"):
       for i in com[1:].split():
@@ -93,9 +101,13 @@ def main(argc: int, argv: list):
       buf = buf[:-int(com[2:])]
     elif (com[:2] == "E "):
       sep = int(com[2:])
+    elif (com[:3] == "Hb "):
+      for i in com[3:]:
+        print(f"{GREEN}{bin(ord(i))[2:].upper():0>8}{RESET}", end=" ")
+      print("\b")
     elif (com[:3] == "Hc "):
       for i in com[3:]:
-        print(f"{GREEN}{hex(ord(i))[2:].upper():0<2}{RESET}", end=" ")
+        print(f"{GREEN}{hex(ord(i))[2:].upper():0>2}{RESET}", end=" ")
       print("\b")
     elif (com[:2] == "B "):
       for i in range(int(com[2:])):
@@ -111,6 +123,12 @@ def main(argc: int, argv: list):
         pos += 1
     elif (com[:2] == "P "):
       pos = int(com[2:], base=16)
+    elif (com[:3] == "PX "):
+      val = com[3:].split()
+      if (len(val) != 2):
+        print(f"`PP` expected 2 arguments")
+        continue
+      printBuf00(buf[int(val[0], base=16):int(val[1], base=16)], sep, pos)
     elif (com[:3] == "PP "):
       val = com[3:].split()
       if (len(val) != 2):
