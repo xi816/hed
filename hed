@@ -64,6 +64,7 @@ def main(argc: int, argv: list):
     if (com == ""):
       pass
     elif (com == "q"):
+      print(end=RESET);
       break
     elif (com == "s"):
       with open(argv[1], "wb") as fl:
