@@ -10,49 +10,46 @@ BLACK =\
   "\033[30m";
 
 ERR_UNKNOWN_COMMAND = "Unknown command";
+ERR_NOT_SAVED       = "Warning: buffer modified";
 
 def parseCommand(com: str, buflen: int, cur: int):
   command = [0,0, ""];
   if (not com):
     command = [cur, cur, "\n"];
   elif (com[0].isalpha()):                         # command
-    command = [cur, cur, com];
+    args = com.split();
+    command = [cur, cur, args[0], args[1:]];
   elif ((com[0] == ",") and (com[1].isalpha())):   # ,command
-    print("matched pattern `,command`");
-    command[0] = 0;
-    command[1] = buflen;
-    command[2] = com[1:];
-    print(command);
+    # print("matched pattern `,command`");
+    args = com[1:].split();
+    command = [0,buflen, args[0], args[1:]];
   elif ((com[0] == ",") and (com[1].isdigit())):   # ,2command
-    print("matched pattern `,LINEcommand`");
+    # print("matched pattern `,LINEcommand`");
     dig = int(re.search(r"\d+", com).group());
     dl  = len(str(dig));
-    command[0] = 0;
-    command[1] = dig;
-    command[2] = com[dl+1:];
-    print(command);
+    args = com[dl+1:].split();
+    command = [0,dig, args[0], args[1:]];
   elif (com[0].isdigit()):                         # 2command / 2,3command
-    print("matching patterns `LINEcommand`, `LINE,LINEcommand`");
+    # print("matching patterns `LINEcommand`, `LINE,LINEcommand`");
     digs = re.search(r"\d+,\d+", com);
     if (digs is not None):                         # 2,3command
       digs = list(map(int, digs.group().split(",")));
-      command[0] = digs[0];
-      command[1] = digs[1];
-      command[2] = com[len(str(digs[0])) + len(str(digs[1])) + 1 :];
+      args = com[len(str(digs[0])) + len(str(digs[1])) + 1 :].split();
+      command = [digs[0],digs[1], args[0], args[1:]];
       if (not command[2]):
         command[2] = "p";
     else:                                          # 2command
       dig = int(re.search(r"\d+", com).group());
       dl  = len(str(dig));
-      command[0] = dig;
-      command[1] = dig;
-      command[2] = com[dl:];
+      args = com[dl:].split();
+      command = [dig,dig, args[0], args[1:]];
       if (not command[2]):
         command[2] = "p";
-    print(command);
   return command;
 
-nhex = lambda a: f"{hex(a)[2:]:0>2}";
+nhex  = lambda a: f"{hex(a)[2:].upper():0>2}";
+nhexw = lambda a: f"{hex(a)[2:].upper():0>4}";
+nhexd = lambda a: f"{hex(a)[2:].upper():0>8}";
 
 def getCharRepr(c: str, pos: bool):
   COLOR = BYELLOW if (pos) else ""
@@ -97,21 +94,25 @@ def printBuf00(buf: list, sep: int, offs: int, cpos: int):
 def main(argc: int, argv: list):
   if (not argv[1:]):
     argv.append("unnamed.out")
+  filename = argv[1];
   if (not os.path.exists(argv[1])):
     with open(argv[1], "wb"):
       pass
   with open(argv[1], "rb") as fl:
     buf = bytearray(fl.read());
+  print(len(buf));
   pos: int = 0
   sep: int = 16
   errm = "";
+  saved = 1;
+  appendbuf = bytearray();
 
-  while (True):
-    com = input(f"{YELLOW}[0x{hex(pos)[2:].upper():0>4}]{RESET} -> {GREEN}");
+  while (1):
+    prompt = f"{YELLOW}[0x{nhexd(pos)}]{RESET} -> {GREEN}";
+    com = input(prompt);
     print(end="\033[0m");
-    print(len(buf));
     c = parseCommand(com, len(buf), pos);
-    print(c);
+    # print(c);
     if (not c[2]):
       continue;
     elif (c[2] == "\n"):
@@ -120,7 +121,36 @@ def main(argc: int, argv: list):
     elif (c[2] == "h"):
       print(errm);
     elif (c[2] == "q"):
-      exit(0);
+      if (saved):
+        exit(0);
+      else:
+        errm = ERR_NOT_SAVED;
+        print("?");
+    elif (c[2] == "f"):
+      if (not c[3]):
+        print(filename);
+      elif (len(c[3]) == 1):
+        filename = c[3][0];
+        print(filename);
+    elif (c[2] == "e"):
+      if (not c[3]):
+        if (not os.path.exists(filename)):
+          print(f"{filename}: no such file or directory");
+          with open(filename, "wb"):
+            pass;
+        with open(filename, "rb") as fl:
+          buf = bytearray(fl.read());
+        print(len(buf));
+      elif (len(c[3]) == 1):
+        if (not os.path.exists(c[3][0])):
+          print(f"{c[3][0]}: no such file or directory");
+          with open(c[3][0], "wb"):
+            pass;
+        with open(c[3][0], "rb") as fl:
+          buf = bytearray(fl.read());
+        print(len(buf));
+    elif (c[2] == "d"):
+      del buf[c[0]:c[1]+1];
     elif (c[2] == "p"):
       printBuf00(buf[c[0]:c[1]+1], sep, c[0], pos);
     elif (c[2] == "S"):
@@ -129,9 +159,31 @@ def main(argc: int, argv: list):
         buf += ("\0"*(val - len(buf))).encode();
       elif (len(buf) > val):
         buf = buf[:-(len(buf) - val)];
+    elif (c[2] == "a"):
+      while ((a := input()) != "."):
+        try:
+          a = int(a, base=16);
+        except: pass;
+        appendbuf.append(a);
+      for i in reversed(appendbuf):
+        buf.insert(c[0]+1, i);
+    elif (c[2] == "r"):
+      while ((a := input()) != "."):
+        try:
+          a = int(a, base=16);
+        except: pass;
+        appendbuf.append(a);
+        buf[c[0]:c[0]+len(appendbuf)] = appendbuf;
+    elif (c[2] == "w"):
+      with open(filename, "wb") as file:
+        file.write(buf);
+      saved = 1;
+    elif (c[2] == "C"):
+      print(end="\033[H\033[2J");
     else:
       print("?");
       errm = ERR_UNKNOWN_COMMAND;
+    saved = c[2] == "w";
 
     if (0):
       if (com == ""):

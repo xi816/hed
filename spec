@@ -4,6 +4,11 @@ Hed specification:
   <num>S            Shrink/stretch the buffer
   <num>S+           Relative stretch
   <num>S-           Relative shrink
+  C                 Clear the screen
   f <file>          Set current filename
   e [file]          Open a file
+  [pos]a            Append after a certain byte
+  [num],[num]d      Delete a certain range
+  w                 Write file
+  q                 Quit
 
